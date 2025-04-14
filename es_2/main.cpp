@@ -5,7 +5,7 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <string>
-#define PATH "img.jpg"
+#define path "img.jpg"
 using namespace cv;
 using namespace std;
 
@@ -31,13 +31,16 @@ using namespace std;
  }
 
 //Effettua la convoluzioe dell'immagine con padding 1 e filtro 3*3
-void convoluzione(Mat &src,Mat&out,Mat filter)
+void convoluzione(Mat &src,Mat &output,Mat filter)
 {
+  cout<<"Start"<<endl;
+  Mat out = output.clone() ;
   //Pixel out[i][j]
-  for(int i = 0; i < src.rows; i++)
+  for(int i = 1; i < src.rows-1; i++)
   {
-    for(int j = 0; j < src.cols; j++)
+    for(int j = 1; j < src.cols-1; j++)
     {
+      
       int scalar = 0;
       //Calcola il valore del pixel corrente
       for(int h = -1; h < 2; h++)
@@ -45,24 +48,36 @@ void convoluzione(Mat &src,Mat&out,Mat filter)
         for(int s = -1; s < 2; s++)
         {
           //Calcolo della somma dei prodotti
-          scalar += src.at<float>(i+h,j+s) * filter.at<float>(1 + h,1 + s); 
+          scalar += src.at<uchar>(i+h,j+s) * filter.at<uchar>(1 + h,1 + s); 
+          //cout<<"src = "<<(int) src.at<uchar>(i+h,j+s)<<"filter = "<< (int)filter.at<uchar>(1 + h,1 + s)<<endl; 
+          
         }
       }
-      
+    
       //Assegnazione al pixel corrente
-      out.at<float>(i,j) = scalar;
+      scalar/=9;
+      out.at<uchar>(i-1,j-1) = scalar;
+      if(i < 2)
+      {
+        //cout<<out.at<uchar>(i-1,j-1)<<" scalar = "<<scalar<<endl;
+      }
     }
   }
+  
+  output = out.clone();
 }
 
-//La prerotazione per una maggiore efficienza viene implementata a riga 53 invertendo i segni del pixel preso in src
-void correlazione(Mat &src,Mat &out,Mat filter)
+//Effettua la convoluzioe dell'immagine con padding 1 e filtro 3*3
+void correlazione(Mat &src,Mat &output,Mat filter)
 {
+  cout<<"Start"<<endl;
+  Mat out = output.clone() ;
   //Pixel out[i][j]
-  for(int i = 0; i < src.rows; i++)
+  for(int i = 1; i < src.rows-1; i++)
   {
-    for(int j = 0; j < src.cols; j++)
+    for(int j = 1; j < src.cols-1; j++)
     {
+      
       int scalar = 0;
       //Calcola il valore del pixel corrente
       for(int h = -1; h < 2; h++)
@@ -70,44 +85,52 @@ void correlazione(Mat &src,Mat &out,Mat filter)
         for(int s = -1; s < 2; s++)
         {
           //Calcolo della somma dei prodotti
-          scalar += src.at<float>(i-h,j-s) * filter.at<float>(1 + h,1 + s); 
+          scalar += src.at<uchar>(i-h,j-s) * filter.at<uchar>(1 + h,1 + s); 
+          //cout<<"src = "<<(int) src.at<uchar>(i+h,j+s)<<"filter = "<< (int)filter.at<uchar>(1 + h,1 + s)<<endl; 
+          
         }
       }
-      
+    
       //Assegnazione al pixel corrente
-      out.at<float>(i,j) = scalar;
+      scalar/=9;
+      out.at<uchar>(i-1,j-1) = scalar;
+      if(i < 2)
+      {
+        //cout<<out.at<uchar>(i-1,j-1)<<" scalar = "<<scalar<<endl;
+      }
     }
   }
+  
+  output = out.clone();
 }
+
 
 int main()
 {
-    Mat in,out;
-    Mat filter(3,3);
-
-    //Inizializzo il filtro
-    for(int i = 0; i < 3; i++)
-    {
-      for(int j = 0; j < 3; j++)
-      {
-        filter.at<float>(i,j) = i + j;
-      }
-    }
+    Mat in,out,inCopy;
+    //Inizializzo il filtro laplaciano
+    Mat filter = (cv::Mat_<uchar>(3, 3) << 
+        1,  1,   1,
+        1,  1,   1,
+        1,  1,   1);
     
     //Prendo l'immagine in input
     in = imread(path, IMREAD_GRAYSCALE);
     if ( !in.data ) return -1;
+    inCopy = in.clone();
     
     //Applico lo zero padding di uno all'immagine
     zeroPadding(in,out,1,1,1,1);
      
-    //Mostro il risultato dell'immagine con il padding
-    imshow(in);
-    imshow(out);
-      
-    convoluzione(in,out,filter);
-      waitKey(0);
+     
+    correlazione(out,inCopy,filter);
     
+    //Mostro il risultato dell'immagine con il padding
+    imshow("Original Image",in);
+    //imshow("Padding Output",out);
+    imshow("Convolution Output NOT NORMALIZED",inCopy);
+    waitKey(0);
+    //destroyAllWindows();
   
     return 0;
 }
